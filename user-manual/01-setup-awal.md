@@ -1,0 +1,293 @@
+# Setup Awal & Administrasi
+
+Bagian ini ditujukan untuk **administrator sistem** yang bertanggung jawab menyiapkan aplikasi untuk pertama kali.
+
+## Tampilan Bare-Bones
+
+Setelah instalasi, aplikasi menampilkan tampilan bare-bones dengan data minimal:
+- User admin default (admin/admin)
+- Tahun fiskal aktif
+- Tidak ada COA, template, atau data master lainnya
+
+![Dashboard Bare Bones](screenshots/service/dashboard.png)
+
+## Import Industry Seed Data
+
+### Konsep Seed Data
+
+Seed data adalah paket data awal yang berisi:
+- Bagan Akun (Chart of Accounts) sesuai industri
+- Template transaksi standar
+- Komponen gaji (jika applicable)
+- Deadline pajak
+- Kategori aset tetap
+
+### Pilihan Industry Seed
+
+| Industry | Deskripsi | Fitur Utama |
+|----------|-----------|-------------|
+| IT Services (PKP) | Perusahaan jasa IT dengan kewajiban PPN | Client, Project, Milestone, Invoice |
+| Online Seller | Penjual online marketplace | Produk, Inventory FIFO, Multi-marketplace |
+| Coffee Shop | Usaha kopi & pastry | BOM, Production Order, HPP |
+| Campus | Institusi pendidikan | Mahasiswa, SPP, Beasiswa |
+
+### Langkah Import
+
+1. Buka menu **Pengaturan** di sidebar
+2. Pilih tab **Import Data**
+3. Klik **Pilih File** dan pilih file ZIP seed data
+4. Review preview data yang akan diimpor
+5. Klik **Import**
+
+> **Catatan**: Proses import akan menggantikan data existing. Pastikan tidak ada data penting sebelum import.
+
+---
+
+## Feature Overview
+
+Setelah import seed data, fitur yang tersedia tergantung jenis industri:
+
+### Fitur Umum (Semua Industri)
+
+| Fitur | Menu | Deskripsi |
+|-------|------|-----------|
+| Transaksi | Transaksi | Catat pendapatan dan pengeluaran |
+| Laporan | Laporan | Neraca, Laba Rugi, Arus Kas |
+| Pajak | Pajak | PPN, PPh, Kalender Pajak |
+| Penggajian | Penggajian | Payroll, BPJS, PPh 21 |
+| Aset Tetap | Aset | Depresiasi, Kategori Aset |
+
+### Fitur Industri Jasa
+
+| Fitur | Menu | Deskripsi |
+|-------|------|-----------|
+| Client | Klien | Data klien dan kontak |
+| Project | Proyek | Proyek dengan milestone |
+| Invoice | Invoice | Penagihan ke klien |
+| Profitabilitas | Laporan | Profit per klien/proyek |
+
+### Fitur Industri Dagang
+
+| Fitur | Menu | Deskripsi |
+|-------|------|-----------|
+| Produk | Inventori > Produk | Master produk dengan harga |
+| Stok | Inventori > Stok | Saldo stok per lokasi |
+| Transaksi Inventori | Inventori > Transaksi | Pembelian, Penjualan, Adjustment |
+| Laporan Stok | Inventori > Laporan | Kartu stok, Valuasi |
+
+---
+
+## Master Data
+
+### Bagan Akun (Chart of Accounts)
+
+Buka menu **Akun** untuk melihat daftar akun.
+
+![Daftar Akun](screenshots/accounts-list.png)
+
+#### Struktur Kode Akun
+
+| Prefix | Kategori | Contoh |
+|--------|----------|--------|
+| 1.x.xx | Aset | Kas, Bank, Piutang, Peralatan |
+| 2.x.xx | Kewajiban | Hutang Usaha, Hutang Pajak |
+| 3.x.xx | Ekuitas | Modal, Laba Ditahan |
+| 4.x.xx | Pendapatan | Pendapatan Jasa, Penjualan |
+| 5.x.xx | Beban | Gaji, Sewa, Listrik |
+
+#### Tambah Akun Baru
+
+1. Klik tombol **Akun Baru**
+2. Isi form:
+
+![Form Akun](screenshots/accounts-form.png)
+
+| Field | Keterangan |
+|-------|------------|
+| Kode | Kode unik mengikuti struktur |
+| Nama | Nama akun |
+| Tipe | Aset/Kewajiban/Ekuitas/Pendapatan/Beban |
+| Sub Tipe | Kategori detail |
+| Saldo Normal | Debit/Kredit |
+
+3. Klik **Simpan**
+
+### Template Transaksi
+
+Template menentukan akun-akun yang terlibat dalam suatu jenis transaksi.
+
+![Daftar Template](screenshots/service/templates-list.png)
+
+Lihat [Referensi Template](12-lampiran-template.md) untuk daftar lengkap template standar.
+
+---
+
+## Akun Posting Jurnal Otomatis
+
+Fitur invoice (faktur penjualan), bill (tagihan vendor), dan transaksi serupa membuat **jurnal DRAFT** secara otomatis lewat template (lihat [Faktur & Tagihan](16-faktur-tagihan.md)). Template tersebut perlu tahu akun spesifik yang dipakai pada tenant ini — Piutang, Hutang, dan dua slot PPN. Pemetaan ini dikonfigurasi sekali di **Pengaturan → Profil Perusahaan**, bagian **Akun Posting (Jurnal Otomatis)**.
+
+| Slot | Dipakai oleh | Contoh akun |
+|------|--------------|-------------|
+| Piutang Usaha (AR) | Pengakuan pendapatan invoice (debit) | 1.1.10 Piutang Usaha |
+| Hutang Usaha (AP) | Pengakuan tagihan vendor (kredit) | 2.1.10 Hutang Usaha |
+| PPN Keluaran | Komponen PPN pada invoice (kredit) | 2.1.30 PPN Keluaran |
+| PPN Masukan | Komponen PPN pada tagihan vendor (debit) | 1.1.40 PPN Masukan |
+
+Empat slot tersebut **wajib** terisi sebelum invoice dapat dikirim atau tagihan disetujui — proses bridge ke jurnal akan gagal dengan pesan "Akun … belum dikonfigurasi" jika slot kosong.
+
+Pencarian akun pada form ini memakai *combobox*: ketik kode atau nama akun, kemudian klik hasil yang muncul (maksimum 10 hasil). Daftar akun lengkap tidak ditampilkan supaya tetap dapat dipakai meskipun bagan akun besar.
+
+### Kapan diisi
+
+- **Setup awal tenant baru:** isi langsung setelah import seed data. Seed industri standar (`it-service`, `online-seller`, `coffee-shop`, `campus`) sudah menyertakan akun-akun ini di bagan akun — tinggal memilih.
+- **Tenant lama:** jika sebelum upgrade slot kosong, akan ada error saat pertama kali mengirim invoice. Buka **Pengaturan → Profil Perusahaan** dan lengkapi.
+
+---
+
+## User Management
+
+### Melihat Daftar Pengguna
+
+Buka menu **Pengguna** di sidebar.
+
+![Daftar Pengguna](screenshots/users-list.png)
+
+### Tambah Pengguna Baru
+
+1. Klik tombol **Pengguna Baru**
+
+![Form Pengguna](screenshots/users-form.png)
+
+2. Isi form:
+
+| Field | Keterangan |
+|-------|------------|
+| Username | Login ID (unik) |
+| Nama Lengkap | Nama tampilan |
+| Email | Alamat email |
+| Password | Password minimal 12 karakter |
+| Role | ADMIN/OWNER/ACCOUNTANT/STAFF/AUDITOR/EMPLOYEE |
+
+3. Klik **Simpan**
+
+### Sesi Perangkat (Device Sessions)
+
+Di halaman detail pengguna, terdapat bagian **Sesi Perangkat Aktif** yang menampilkan daftar perangkat yang terhubung melalui OAuth Device Flow (misalnya Claude Code, Docker Desktop).
+
+![Sesi Perangkat](screenshots/settings/devices.png)
+
+Informasi yang ditampilkan:
+- **Perangkat** — nama perangkat yang didaftarkan
+- **Client ID** — identifier aplikasi
+- **Status** — Aktif atau Kedaluwarsa
+- **Dibuat** — tanggal token dibuat
+- **Terakhir Digunakan** — waktu terakhir token digunakan
+- **IP Terakhir** — alamat IP terakhir
+
+Untuk mencabut akses:
+- Klik **Cabut** pada sesi individual
+- Klik **Cabut Semua** untuk mencabut semua sesi sekaligus
+
+### Role dan Permission
+
+| Role | Deskripsi | Permission |
+|------|-----------|------------|
+| ADMIN | Administrator sistem | Full access |
+| OWNER | Pemilik bisnis | Full access kecuali user management |
+| ACCOUNTANT | Akuntan | Transaksi, Laporan, Pajak |
+| STAFF | Staff operasional | Transaksi, View laporan |
+| AUDITOR | Auditor | View only |
+| EMPLOYEE | Karyawan | Self-service saja |
+
+---
+
+## Telegram Integration
+
+### Untuk Administrator
+
+#### 1. Buat Bot di BotFather
+
+1. Buka Telegram, cari @BotFather
+2. Kirim `/newbot`
+3. Ikuti instruksi untuk membuat bot
+4. Catat **Bot Token** yang diberikan
+
+#### 2. Konfigurasi Environment
+
+Tambahkan ke environment variables server:
+
+```
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_WEBHOOK_URL=https://your-domain.com/api/telegram/webhook
+```
+
+#### 3. Daftarkan Webhook
+
+```bash
+curl -X POST "https://api.telegram.org/bot{your_token}/setWebhook" \
+  -d "url=https://your-domain.com/api/telegram/webhook"
+```
+
+### Untuk End User
+
+1. Buka menu **Pengaturan** > **Telegram**
+2. Klik **Hubungkan Telegram**
+3. Salin kode verifikasi
+4. Buka Telegram, cari bot yang dikonfigurasi
+5. Kirim kode verifikasi ke bot
+
+Setelah terhubung, Anda dapat mengirim foto struk via Telegram.
+
+Lihat [Tutorial Akuntansi](02-tutorial-akuntansi.md) bagian Telegram Receipt untuk panduan penggunaan.
+
+---
+
+## Periode Fiskal
+
+### Konsep
+
+Periode fiskal adalah periode akuntansi perusahaan. Aplikasi menggunakan sistem 12 bulan per tahun fiskal.
+
+### Melihat Periode Fiskal
+
+Buka menu **Periode Fiskal** di sidebar.
+
+![Daftar Periode Fiskal](screenshots/fiscal-periods-list.png)
+
+### Status Periode
+
+| Status | Arti |
+|--------|------|
+| OPEN | Periode aktif, transaksi dapat dicatat |
+| CLOSED | Periode ditutup, transaksi tidak dapat dicatat |
+
+---
+
+## Backup Data
+
+### Manual Backup
+
+1. Buka menu **Pengaturan** > **Backup**
+2. Klik **Buat Backup**
+3. File backup akan terunduh
+
+### Kapan Perlu Backup
+
+- Sebelum import data baru
+- Sebelum tutup buku tahunan
+- Secara berkala (minimal bulanan)
+
+---
+
+## Tips Setup
+
+1. **Mulai dari seed data** - Jangan setup dari kosong, gunakan seed data industri yang sesuai
+2. **Review COA** - Pastikan bagan akun sesuai kebutuhan bisnis
+3. **Test transaksi** - Coba input beberapa transaksi untuk memastikan setup benar
+4. **Dokumentasi** - Catat perubahan konfigurasi yang dilakukan
+
+## Lihat Juga
+
+- [Tutorial Dasar Akuntansi](02-tutorial-akuntansi.md) - Pahami konsep dan workflow
+- [Keamanan & Kepatuhan](11-keamanan-kepatuhan.md) - Konfigurasi keamanan
+- [Referensi Akun](12-lampiran-akun.md) - Daftar akun standar
